@@ -9,5 +9,8 @@ __pycache__/
 pulseops.db
 *.sqlite3
 
+# Local clones used by the three-service integration demo.
+integrations/
+
 .coverage
 htmlcov/
