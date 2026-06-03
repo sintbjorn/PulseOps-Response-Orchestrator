@@ -57,6 +57,18 @@ cp .env.example .env
 docker compose up --build
 ```
 
+## Three-Service Demo
+
+Run the full PulseWatch -> PulseOps -> Notification Service flow with:
+
+```bash
+docker compose -f docker-compose.integration.yml up -d --build
+bash scripts/integration_smoke.sh
+```
+
+See [Integration Demo](docs/INTEGRATION_DEMO.md) for ports, expected output, and reset
+commands.
+
 ## Simulate A Policy
 
 ```bash
