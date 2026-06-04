@@ -93,6 +93,28 @@ class ExecutionRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ExecutionTimelineEvent(BaseModel):
+    event_type: str
+    title: str
+    status: str | None = None
+    actor: str = "pulseops"
+    occurred_at: datetime | None = None
+    duration_ms: float | None = None
+    related_step_id: int | None = None
+    details: dict[str, Any] = Field(default_factory=dict)
+
+
+class ExecutionTimelineRead(BaseModel):
+    execution_id: str
+    incident_id: str | None
+    fingerprint: str
+    target: str
+    severity: Severity
+    status: ExecutionStatus
+    generated_at: datetime
+    events: list[ExecutionTimelineEvent]
+
+
 class ExecutionFeedbackCreate(BaseModel):
     rating: FeedbackRating
     comment: str | None = None

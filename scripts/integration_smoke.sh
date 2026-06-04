@@ -51,6 +51,23 @@ echo "PulseWatch events:"
 curl -fsS "$PULSEWATCH_URL/api/v1/incidents/$incident_id/events" \
   | python3 -m json.tool
 
+executions_response="$(
+  curl -fsS -G "$PULSEOPS_URL/api/v1/executions" \
+    --data-urlencode "fingerprint=$fingerprint" \
+    --data-urlencode "limit=1"
+)"
+execution_id="$(
+  printf '%s' "$executions_response" \
+    | python3 -c 'import json,sys; items=json.load(sys.stdin); print(items[0]["id"] if items else "")'
+)"
+
+if [ -n "$execution_id" ]; then
+  echo
+  echo "PulseOps execution timeline:"
+  curl -fsS "$PULSEOPS_URL/api/v1/executions/$execution_id/timeline" \
+    | python3 -m json.tool
+fi
+
 echo
 echo "PulseWatch notification attempts:"
 curl -fsS "$PULSEWATCH_URL/api/v1/incidents/$incident_id/notifications" \

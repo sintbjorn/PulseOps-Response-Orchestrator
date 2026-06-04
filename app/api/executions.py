@@ -1,17 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.db.session import get_db
-from app.domain.models import Execution
+from app.domain.models import Execution, RunbookVersion
 from app.schemas.api import (
     ExecutionFeedbackCreate,
     ExecutionRead,
+    ExecutionTimelineRead,
     FeedbackRead,
     ManualStepCompleteRequest,
     StepRead,
 )
 from app.services.executor import complete_manual_step, create_execution_feedback
+from app.services.timeline import build_execution_timeline
 
 router = APIRouter(prefix="/api/v1", tags=["executions"])
 
@@ -41,6 +43,26 @@ def get_execution(execution_id: str, db: Session = Depends(get_db)) -> Execution
     if execution is None:
         raise HTTPException(status_code=404, detail="execution not found")
     return execution
+
+
+@router.get("/executions/{execution_id}/timeline", response_model=ExecutionTimelineRead)
+def get_execution_timeline(
+    execution_id: str,
+    db: Session = Depends(get_db),
+) -> ExecutionTimelineRead:
+    execution = db.scalar(
+        select(Execution)
+        .where(Execution.id == execution_id)
+        .options(
+            selectinload(Execution.policy),
+            selectinload(Execution.runbook_version).selectinload(RunbookVersion.runbook),
+            selectinload(Execution.steps),
+            selectinload(Execution.feedback),
+        )
+    )
+    if execution is None:
+        raise HTTPException(status_code=404, detail="execution not found")
+    return build_execution_timeline(execution)
 
 
 @router.post("/executions/{execution_id}/feedback", response_model=FeedbackRead)

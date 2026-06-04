@@ -28,6 +28,7 @@ FastAPI routes live under `app/api/` and expose:
 - PulseWatch webhook ingestion
 - policy simulation
 - execution lookup and feedback
+- execution timeline projection
 - runbook lookup
 
 ### Domain Layer
@@ -95,6 +96,28 @@ uses deterministic rules over runbook outputs and incident context to produce:
 - `requires_approval`
 
 The result is explainable and suitable for an operator-facing alert.
+
+## Execution Timeline
+
+`GET /api/v1/executions/{execution_id}/timeline` returns a read-only projection over the
+execution record, runbook steps, summary, integrations, and operator feedback. It does not
+write new audit rows; it makes the existing audit trail easier to inspect.
+
+Typical event types:
+
+- `incident_received`
+- `policy_matched`
+- `context_built`
+- `execution_started`
+- `step_started`
+- `step_completed`
+- `analysis_completed`
+- `integrations_notified`
+- `execution_completed`
+- `feedback_received`
+
+For reused or suppressed executions the timeline includes `suppression_evaluated`, making
+noise-control decisions visible to operators.
 
 ## Integration Boundaries
 

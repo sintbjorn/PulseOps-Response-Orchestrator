@@ -43,6 +43,7 @@ bash scripts/integration_smoke.sh
 The script creates a `CRITICAL` PulseWatch signal, repeats the same fingerprint, then prints:
 
 - PulseWatch audit events, including `[PulseOps] Response summary`
+- PulseOps execution timeline
 - PulseWatch notification attempts
 - Mailpit messages from Notification Service
 

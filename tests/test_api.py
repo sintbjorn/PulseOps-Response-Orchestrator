@@ -75,6 +75,89 @@ def test_webhook_executes_and_reuses_recent_summary() -> None:
     assert second_payload["summary"]["suppression"]["action"] == "reuse"
 
 
+def test_execution_timeline_shows_policy_context_steps_and_analysis() -> None:
+    with TestClient(app) as client:
+        execution = client.post(
+            "/api/v1/webhooks/pulsewatch/incidents",
+            json={
+                "incident_id": "incident-timeline-100",
+                "title": "High API latency",
+                "description": "P95 latency is above 1500ms",
+                "status": "NEW",
+                "severity": "CRITICAL",
+                "source": "monitoring",
+                "target": "renovation-flip-api",
+                "fingerprint": "renovation-flip-api:latency:timeline-100",
+                "metadata": {
+                    "deploy_version": "1.8.4",
+                    "metrics": {"5xx_rate": 0.09},
+                },
+            },
+        ).json()
+        response = client.get(f"/api/v1/executions/{execution['id']}/timeline")
+
+    assert response.status_code == 200
+    payload = response.json()
+    event_types = [event["event_type"] for event in payload["events"]]
+
+    assert payload["execution_id"] == execution["id"]
+    assert payload["status"] == "SUCCEEDED"
+    assert event_types[:3] == [
+        "incident_received",
+        "policy_matched",
+        "context_built",
+    ]
+    assert "execution_started" in event_types
+    assert "step_started" in event_types
+    assert "step_completed" in event_types
+    assert "analysis_completed" in event_types
+    assert "execution_completed" in event_types
+
+    policy_event = next(
+        event for event in payload["events"] if event["event_type"] == "policy_matched"
+    )
+    assert policy_event["details"]["policy"] == "Critical API latency policy"
+    assert policy_event["details"]["runbook"] == "High API Latency Diagnostics"
+
+    analysis_event = next(
+        event for event in payload["events"] if event["event_type"] == "analysis_completed"
+    )
+    assert analysis_event["details"]["confidence"] > 0
+    assert analysis_event["details"]["evidence"]
+
+
+def test_reused_execution_timeline_shows_suppression_decision() -> None:
+    incident_payload = {
+        "incident_id": "incident-timeline-reuse-100",
+        "title": "High API latency",
+        "severity": "CRITICAL",
+        "source": "monitoring",
+        "target": "renovation-flip-api",
+        "fingerprint": "renovation-flip-api:latency:timeline-reuse-100",
+        "metadata": {"metrics": {"5xx_rate": 0.08}},
+    }
+
+    with TestClient(app) as client:
+        first = client.post("/api/v1/webhooks/pulsewatch/incidents", json=incident_payload).json()
+        reused = client.post(
+            "/api/v1/webhooks/pulsewatch/incidents",
+            json={**incident_payload, "incident_id": "incident-timeline-reuse-101"},
+        ).json()
+        response = client.get(f"/api/v1/executions/{reused['id']}/timeline")
+
+    assert first["status"] == "SUCCEEDED"
+    assert reused["status"] == "REUSED"
+    assert response.status_code == 200
+
+    payload = response.json()
+    suppression_event = next(
+        event for event in payload["events"] if event["event_type"] == "suppression_evaluated"
+    )
+    assert suppression_event["status"] == "REUSED"
+    assert suppression_event["details"]["action"] == "reuse"
+    assert suppression_event["details"]["reused_execution_id"] == first["id"]
+
+
 def test_execution_feedback_loop() -> None:
     with TestClient(app) as client:
         execution = client.post(

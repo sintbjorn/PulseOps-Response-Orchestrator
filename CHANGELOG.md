@@ -4,6 +4,13 @@ All notable changes to PulseOps Response Orchestrator are documented here.
 
 This project follows a lightweight changelog style inspired by Keep a Changelog.
 
+## [Unreleased]
+
+### Added
+
+- Execution timeline endpoint for operator-friendly runbook audit views.
+- Integration smoke output for PulseOps execution timelines.
+
 ## [0.1.0] - 2026-06-03
 
 ### Added

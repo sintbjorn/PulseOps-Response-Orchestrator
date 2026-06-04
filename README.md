@@ -58,6 +58,11 @@ PulseWatch CRITICAL signal
   Executions point to immutable `RunbookVersion` records, so historical executions remain
   honest even after a runbook changes.
 
+- **Execution timeline**
+  `GET /api/v1/executions/{execution_id}/timeline` returns an operator-friendly timeline
+  of policy matching, context building, step execution, evidence analysis, integrations,
+  and feedback.
+
 - **Incident context builder**
   The service collects incident details, recent fingerprint recurrence, previous
   executions, similar active incidents, dependency health, recent deploy hints, and prior
@@ -228,6 +233,27 @@ curl -X POST http://localhost:8000/api/v1/webhooks/pulsewatch/incidents \
       "healthcheck_url": "http://localhost:8000/health/live"
     }
   }'
+```
+
+## Example Execution Timeline
+
+```bash
+curl http://localhost:8000/api/v1/executions/{execution_id}/timeline
+```
+
+Example event types:
+
+```text
+incident_received
+policy_matched
+context_built
+execution_started
+step_started
+step_completed
+analysis_completed
+integrations_notified
+execution_completed
+feedback_received
 ```
 
 ## Documentation
